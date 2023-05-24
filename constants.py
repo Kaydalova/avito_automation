@@ -1,7 +1,15 @@
+from pathlib import Path
+
 GRANT_TYPE = 'client_credentials'
 
-USER_ID = 131226714
 TOKEN_URL = 'https://api.avito.ru/token'
+BASE_URL = "https://api.avito.ru/messenger/"
+
+BASE_DIR = Path(__file__).parent
+LOG_DIR = 'logs'
+LOG_FILE = 'parser.log'
+
+
 
 # Текст ответа в будни в рабочее время с 09:00 до 18:59
 WORKING_HOURS_ANSWERS = [
