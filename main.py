@@ -104,9 +104,9 @@ def send_message(chat_id, headers):
         text = random.choice(WEEKEND_ANSWERS)
     else:
         time = str(datetime.now().time())
-        if "09:00" <= time <= "18:59":
+        if "10:00" <= time <= "17:59":
             text = random.choice(WORKING_HOURS_ANSWERS)
-        elif "19:00" <= time <= "23:59":
+        elif "18:00" <= time <= "23:59":
             text = random.choice(WEEKDAYS_19_TO_2359_ANSWERS)
         else:
             text = random.choice(WEEKDAYS_00_TO_0859_ANSWERS)
