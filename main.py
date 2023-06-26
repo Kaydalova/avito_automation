@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 
 from constants import (GRANT_TYPE, TOKEN_URL,
                        MESSEGE_URL, READ_URL,
-                       SEND_URL, GET_CHAT__MESSAGES_URL,
-                       TIME_ZONE, THREE_HOURS_IN_SECONDS,
+                       SEND_URL, GET_CHAT_MESSAGES_URL,
+                       TIME_ZONE,
                        WEEKDAYS_00_TO_0859_ANSWERS,
                        WEEKDAYS_19_TO_2359_ANSWERS, WEEKEND_ANSWERS,
                        WORKING_HOURS_ANSWERS)
@@ -44,7 +44,7 @@ def refresh_token():
         to_yaml = {"token": data["access_token"]}
     except Exception as e:
         raise TokenRefreshException(f'Ошибка получения токена. {e}')
-    
+
     try:
         with open("token.yml", "w") as file:
             yaml.dump(to_yaml, file)
@@ -83,11 +83,11 @@ def get_all_chats(headers):
             headers=headers,
             params=params)
         return json.loads(chats.text)
-    except ConnectionError:
+    except (ConnectionError, TimeoutError) as e:
         logging.warning(
-            f'Ошибка при работе функции get_all_chats-{ConnectionError}')
+            f'Ошибка при работе функции get_all_chats-{e}')
         try:
-            time.sleep(10)
+            time.sleep(100)
             refresh_token()
             headers = get_headers()
             chats = requests.get(
@@ -99,7 +99,7 @@ def get_all_chats(headers):
             logging.warning(
                 f'Неудачный хэндлинг ConnectionError -{Exception}')
     except Exception as e:
-        logging.warning(f'Ошибка при работе функции get_all_chats - {e}')
+        logging.warning(f'Новая ошибка при работе функции get_all_chats - {e}')
 
 
 def read_message(chat_id, headers):
@@ -158,7 +158,7 @@ def get_chat_messages(chat_id, headers):
     logging.info('get_chat_messages')
     try:
         chats = requests.get(
-            url=GET_CHAT__MESSAGES_URL.format(USER_ID=USER_ID, chat_id=chat_id),
+            url=GET_CHAT_MESSAGES_URL.format(USER_ID=USER_ID, chat_id=chat_id),
             headers=headers)
         logging.info('Проверяем сообщения в чате')
         return json.loads(chats.text)
@@ -188,11 +188,14 @@ def check_chat(chat):
         messages = get_chat_messages(chat_id, headers=get_headers())
         last_message = messages["messages"][0]
         for message in messages["messages"]:
-            if message["direction"] == "out" and (message["created"]) > int(time.time()-10800) :
+            if (message["direction"] == "out" and (
+                    message["created"]) > int(time.time()-10800)):
                 logging.info(
-                    f'В чате {chat_id} уже велась переписка, автоответ не нужен. Последнее сообщение{last_message}')
+                    f'В чате {chat_id} уже велась переписка.\
+                        Последнее сообщение {last_message}')
                 return False
-    logging.info(f'Нужно ответить на сообщение chat_id {chat_id}, text = {last_message["content"]["text"]}')
+    logging.info(f'Нужно ответить на сообщение chat_id {chat_id},\
+                 text = {last_message["content"]["text"]}')
     return True
 
 
@@ -202,7 +205,8 @@ def check_upcoming_and_answer():
     try:
         chats = chats["chats"]
     except KeyError as e:
-        logging.warning(f'Ошибка при работе функции check_upcoming_and_answer - KeyError {e}')
+        logging.warning(f'Ошибка при работе функции\
+                        check_upcoming_and_answer - KeyError {e}')
         refresh_token()
         chats = get_all_chats(headers=get_headers())
         chats = chats["chats"]
@@ -216,14 +220,15 @@ def check_upcoming_and_answer():
         else:
             logging.info('Входящих сообщений нет')
     except Exception as e:
-        logging.warning(f'Ошибка при работе функции check_upcoming_and_answer - {e}')
+        logging.warning(f'Ошибка при работе функции\
+                        check_upcoming_and_answer - {e}')
 
 
 def main():
     configure_logging()
     logging.info('Автоответ запущен')
     schedule.every(23).hours.do(refresh_token)
-    schedule.every(1).minutes.do(check_upcoming_and_answer)
+    schedule.every(2).minutes.do(check_upcoming_and_answer)
 
     while True:
         schedule.run_pending()

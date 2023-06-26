@@ -17,7 +17,7 @@ BASE_URL = "https://api.avito.ru/messenger/"
 MESSEGE_URL = "https://api.avito.ru/messenger/v2/accounts/{USER_ID}/chats"
 READ_URL = "https://api.avito.ru/messenger/v1/accounts/{USER_ID}/chats/{chat_id}/read"
 SEND_URL = "https://api.avito.ru/messenger/v1/accounts/{USER_ID}/chats/{chat_id}/messages"
-GET_CHAT__MESSAGES_URL = "https://api.avito.ru/messenger/v3/accounts/{USER_ID}/chats/{chat_id}/messages/"
+GET_CHAT_MESSAGES_URL = "https://api.avito.ru/messenger/v3/accounts/{USER_ID}/chats/{chat_id}/messages/"
 
 THREE_HOURS_IN_SECONDS = 10800
 
