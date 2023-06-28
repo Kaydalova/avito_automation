@@ -60,18 +60,13 @@ Choose 1-4 [1]:
 - После выбора редактора откроется crontab-файл. В этом файле как раз нужно перечислять одну за другой все команды.
 Ниже приведены несколько примеров cron-заданий.
 
-- Чтобы выполнять команду каждые 2 минуты, задание должно быть такое:
-
+- Чтобы выполнять команду каждую минуту, задание должно быть такое:
 ```
-# */2 * * * * /<путь до python в venv> /<путь до директории с файлом main.py> >/<куда сохранить лог cron>cronlog.txt 2>&1
-```
-- Например:
-```
-# */2 * * * * /home/alexandra/Dev/avito_automation/venv/bin/python /home/alexandra/Dev/avito_automation/main.py >/home/alexandra/Dev/avito_automation/cronlog.txt 2>&1
+* * * * *  cd /root/avito_automation/ && /root/avito_automation/venv/bin/python /root/avito_automation/main.py >/root/avito_automation/cronlog.txt 2>&1
 ```
 - Так же будем обновлять токен раз в 12 часов:
 ```
-# 0 */12 * * * /home/alexandra/Dev/avito_automation/venv/bin/python /home/alexandra/Dev/avito_automation/refresh_token.py >/home/alexandra/Dev/avito_automation/cronlog.txt 2>&1
+0 */12 * * * cd /root/avito_automation/ && /root/avito_automation/venv/bin/python /root/avito_automation/refresh_token.py >/root/avito_automation/cronlog.txt 2>&1
 ```
 ### Автор
 [Александра Кайдалова](https://t.me/kaydalova)
