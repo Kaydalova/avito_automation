@@ -1,56 +1,25 @@
 import json
+import logging
 import os
 import random
 import time
 from datetime import datetime
-import logging
 
+import pytz
 import requests
-import schedule
 import yaml
 from dotenv import load_dotenv
 
-from constants import (GRANT_TYPE, TOKEN_URL,
-                       MESSEGE_URL, READ_URL,
-                       SEND_URL, GET_CHAT_MESSAGES_URL,
-                       TIME_ZONE,
+from config import configure_logging
+from constants import (GET_CHAT_MESSAGES_URL, MESSEGE_URL, SEND_URL, TIME_ZONE,
                        WEEKDAYS_00_TO_0859_ANSWERS,
                        WEEKDAYS_19_TO_2359_ANSWERS, WEEKEND_ANSWERS,
                        WORKING_HOURS_ANSWERS)
-from config import configure_logging
-from exceptions import TokenRefreshException
-import pytz
+from refresh_token import refresh_token
 
 load_dotenv()
 
 USER_ID = os.getenv("USER_ID")
-
-
-def refresh_token():
-    """
-    Функция посылает запрос на обновление токена
-    и записывает его в файл token.yml.
-    Время действия токена ограничено — 24 часа с момента его получения.
-    """
-    logging.info('refresh_token')
-    data = {
-        "grant_type": GRANT_TYPE,
-        "client_id": os.getenv("CLIENT_ID"),
-        "client_secret": os.getenv("CLIENT_SECRET")
-    }
-    try:
-        req_token = requests.post(TOKEN_URL, data)
-        data = json.loads(req_token.text)
-        to_yaml = {"token": data["access_token"]}
-    except Exception as e:
-        raise TokenRefreshException(f'Ошибка получения токена. {e}')
-
-    try:
-        with open("token.yml", "w") as file:
-            yaml.dump(to_yaml, file)
-            logging.INFO('Токен успешно обновлен')
-    except Exception as e:
-        logging.warning(f'Ошибка обновления токена {e}')
 
 
 def get_headers():
@@ -83,7 +52,9 @@ def get_all_chats(headers):
             headers=headers,
             params=params)
         return json.loads(chats.text)
-    except (ConnectionError, TimeoutError) as e:
+    except (ConnectionError,
+            TimeoutError,
+            requests.exceptions.ConnectionError) as e:
         logging.warning(
             f'Ошибка при работе функции get_all_chats-{e}')
         try:
@@ -100,20 +71,6 @@ def get_all_chats(headers):
                 f'Неудачный хэндлинг ConnectionError -{Exception}')
     except Exception as e:
         logging.warning(f'Новая ошибка при работе функции get_all_chats - {e}')
-
-
-def read_message(chat_id, headers):
-    """
-    Функция отмечает в переданном ей chat_id
-    (чате) все входящие сообщения как прочитанные.
-    """
-    logging.INFO('read_message')
-    try:
-        chats = requests.post(
-            url=READ_URL.format(USER_ID=USER_ID, chat_id=chat_id),
-            headers=headers)
-    except Exception as e:
-        logging.warning(f'Ошибка при работе функции read_message - {e}')
 
 
 def send_message(chat_id, headers):
@@ -183,6 +140,7 @@ def check_chat(chat):
     logging.info(f'time.time() = {time.time()}')
     logging.info(f'chat["updated"] = {chat["updated"]}')
     logging.info(f'update_time = {update_time}')
+
     if update_time < 300:
         chat_id = chat["id"]
         messages = get_chat_messages(chat_id, headers=get_headers())
@@ -194,45 +152,41 @@ def check_chat(chat):
                     f'В чате {chat_id} уже велась переписка.\
                         Последнее сообщение {last_message}')
                 return False
-    logging.info(f'Нужно ответить на сообщение chat_id {chat_id},\
-                 text = {last_message["content"]["text"]}')
+        logging.info(f'Нужно ответить на сообщение chat_id {chat_id},\
+                     text = {last_message["content"]["text"]}')
     return True
 
 
 def check_upcoming_and_answer():
     logging.info('check_upcoming_and_answer')
-    chats = get_all_chats(headers=get_headers())
+    headers = get_headers()
+    chats = get_all_chats(headers)
     try:
         chats = chats["chats"]
     except KeyError as e:
-        logging.warning(f'Ошибка при работе функции\
-                        check_upcoming_and_answer - KeyError {e}')
+        logging.warning(f'KeyError {e}')
         refresh_token()
-        chats = get_all_chats(headers=get_headers())
+        headers = get_headers()
+        chats = get_all_chats(headers)
         chats = chats["chats"]
+
     try:
         if len(chats) > 0:
             logging.info('Сообщение есть')
             for chat in chats:
                 if check_chat(chat):
                     chat_id = chat["id"]
-                    send_message(chat_id, headers=get_headers())
+                    send_message(chat_id, headers)
         else:
             logging.info('Входящих сообщений нет')
     except Exception as e:
-        logging.warning(f'Ошибка при работе функции\
-                        check_upcoming_and_answer - {e}')
+        logging.warning(
+            f'Ошибка при работе check_upcoming_and_answer - {e}')
 
 
 def main():
     configure_logging()
-    logging.info('Автоответ запущен')
-    schedule.every(23).hours.do(refresh_token)
-    schedule.every(2).minutes.do(check_upcoming_and_answer)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    check_upcoming_and_answer()
 
 
 if __name__ == "__main__":

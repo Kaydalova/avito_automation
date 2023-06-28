@@ -25,7 +25,53 @@ CLIENT_ID = "your_client_id"
 CLIENT_SECRET = "your_client_secret"
 USER_ID = XXXXXXXXX
 ```
+- Создаем и активируем виртуальное окружение, устанавливаем необходимые модули:
+```
+python3 -m venv venv
+. venv/bin/activate
+pip install -r requirements.txt
+```
 - Кастомизировать список возможных сообщений для отправки можно в файле constants.py
 
+#### Запуск скрипта через cron
+Cron — инструмент Unix-систем для планирования выполнения команд на определённое время.
+- Для отображения содержимого crontab-файла текущего пользователя используйте команду:
+```
+crontab -l
+```
+
+- Для редактирования заданий пользователя есть команда:
+```
+crontab -e
+```
+
+- Если эта команда выполняется в первый раз, вам предложат выбрать редактор для Cron:
+```
+no crontab for sk - using an empty one
+
+Select an editor. To change later, run 'select-editor'.
+ 1. /bin/nano <---- простейший
+ 2. /usr/bin/vim.basic
+ 3. /usr/bin/vim.tiny
+ 4. /bin/ed
+
+Choose 1-4 [1]:
+```
+- После выбора редактора откроется crontab-файл. В этом файле как раз нужно перечислять одну за другой все команды.
+Ниже приведены несколько примеров cron-заданий.
+
+- Чтобы выполнять команду каждые 2 минуты, задание должно быть такое:
+
+```
+# */2 * * * * /<путь до python в venv> /<путь до директории с файлом main.py> >/<куда сохранить лог cron>cronlog.txt 2>&1
+```
+- Например:
+```
+# */2 * * * * /home/alexandra/Dev/avito_automation/venv/bin/python /home/alexandra/Dev/avito_automation/main.py >/home/alexandra/Dev/avito_automation/cronlog.txt 2>&1
+```
+- Так же будем обновлять токен раз в 12 часов:
+```
+# 0 */12 * * * /home/alexandra/Dev/avito_automation/venv/bin/python /home/alexandra/Dev/avito_automation/refresh_token.py >/home/alexandra/Dev/avito_automation/cronlog.txt 2>&1
+```
 ### Автор
 [Александра Кайдалова](https://t.me/kaydalova)

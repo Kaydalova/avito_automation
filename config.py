@@ -1,10 +1,10 @@
-from constants import (BASE_DIR, LOG_DIR,
-                       LOG_FILE, TIME_ZONE,
-                       LOG_FORMAT)
+import datetime
 import logging
 from logging.handlers import RotatingFileHandler
+
 import pytz
-import datetime
+
+from constants import BASE_DIR, LOG_DIR, LOG_FILE, LOG_FORMAT, TIME_ZONE
 
 
 class Formatter(logging.Formatter):
@@ -39,6 +39,3 @@ def configure_logging():
     logger.setLevel(logging.INFO)
     logger.addHandler(stream_handler)
     logger.addHandler(rotating_handler)
-    # logging.basicConfig(
-    #     level=logging.INFO,
-    #     handlers=(rotating_handler, stream_handler))
